@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+
+# Data directories
+data
+**/data
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+**/.env
+
+# Logs
+*.log
+**/*.log
+
+# IDE
+.vscode
+.idea
+**/.vscode
+**/.idea
+
+# Test coverage
+coverage
+**/coverage
+
+# Docker
+Dockerfile
+**/Dockerfile
+.dockerignore
+
+# Other
+README.md
+**/README.md
+LICENSE
+**/LICENSE 
