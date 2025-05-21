@@ -30,10 +30,31 @@ mkdir -p ../data/postgres ../backups/postgres
 # 4. Build and start the services
 docker-compose up -d
 
-# 5. Access the application
-# Backend API: http://localhost:3000
-# Check API health status
-curl http://localhost:3000/health
+We provide a `Makefile` with useful commands for common tasks:
+
+| Command | Description |
+|---------|-------------|
+| `make up` | Start all services in detached mode |
+| `make down` | Stop and remove all containers |
+| `make build` | Rebuild the backend service |
+| `make logs` | View logs for all services |
+| `make logs-backend` | View backend logs |
+| `make logs-db` | View database logs |
+| `make ps` | View container status |
+| `make restart` | Restart all services |
+| `make clean` | Stop and remove all containers and volumes |
+| `make migrate` | Run database migrations |
+| `make shell` | Open a shell in the backend container |
+| `make health` | Check backend health status |
+| `make list` | List running containers |
+
+## Health Checks
+
+The backend service includes a health check that verifies the application is running and responsive. The health check runs every 10 seconds and will automatically restart the container if it fails 3 times in a row.
+
+You can manually check the health status using:
+```bash
+make health
 ```
 
 ## Detailed Setup Instructions
