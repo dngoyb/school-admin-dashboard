@@ -40,3 +40,10 @@ prisma/migrations/
 
 # Docker
 .docker/
+data/
+backups/
+docker/.env
+
+# Database
+*.sql
+*.dump
