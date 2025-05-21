@@ -1,0 +1,9 @@
+packages:
+  # All packages in direct subdirs of packages/
+  - 'packages/*'
+  # All apps in direct subdirs of apps/
+  - 'apps/*'
+  # Exclude packages that are inside test directories
+  - '!**/test/**'
+  - '!**/tests/**'
+  - '!**/__tests__/**'
