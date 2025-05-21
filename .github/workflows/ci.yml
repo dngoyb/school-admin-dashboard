@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+        cache: 'pnpm'
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8.x
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      working-directory: ./apps/backend
+    
+    - name: Lint
+      run: pnpm lint
+      working-directory: ./apps/backend
+    
+    - name: Run tests
+      run: pnpm test
+      working-directory: ./apps/backend
+    
+    - name: Build
+      run: pnpm build
+      working-directory: ./apps/backend
