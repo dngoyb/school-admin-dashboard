@@ -4,8 +4,10 @@ import {
 	MinLength,
 	IsNotEmpty,
 	IsOptional,
+	ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class LoginDto {
 	@ApiProperty({ example: 'user@example.com' })
@@ -54,7 +56,13 @@ export class RegisterDto {
 	@IsNotEmpty()
 	password: string;
 
-	@ApiProperty({ type: SchoolDto })
+	@ApiProperty({ example: 'John Doe' })
+	@IsString()
+	@IsOptional()
+	name?: string;
+
+	@ValidateNested()
+	@Type(() => SchoolDto)
 	@IsNotEmpty()
-	school!: SchoolDto;
+	school: SchoolDto;
 }

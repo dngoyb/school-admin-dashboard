@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { UserRole } from '@school-admin/database';
+import { Role } from '@school-admin/database';
 
 export class CreateUserDto {
 	@ApiProperty({ example: 'john.doe@school.com' })
@@ -11,9 +11,9 @@ export class CreateUserDto {
 	@IsString()
 	password: string;
 
-	@ApiProperty({ enum: UserRole, example: UserRole.TEACHER })
-	@IsEnum(UserRole)
-	role: UserRole;
+	@ApiProperty({ enum: Role, example: Role.TEACHER })
+	@IsEnum(Role)
+	role: Role;
 
 	@ApiProperty({ example: 'John Doe' })
 	@IsString()
@@ -35,10 +35,10 @@ export class UpdateUserDto {
 	@IsOptional()
 	name?: string;
 
-	@ApiProperty({ enum: UserRole, example: UserRole.TEACHER, required: false })
-	@IsEnum(UserRole)
+	@ApiProperty({ enum: Role, example: Role.TEACHER, required: false })
+	@IsEnum(Role)
 	@IsOptional()
-	role?: UserRole;
+	role?: Role;
 }
 
 export class UserResponseDto {
@@ -50,9 +50,9 @@ export class UserResponseDto {
 	@IsEmail()
 	email: string;
 
-	@ApiProperty({ enum: UserRole, example: UserRole.TEACHER })
-	@IsEnum(UserRole)
-	role: UserRole;
+	@ApiProperty({ enum: Role, example: Role.TEACHER })
+	@IsEnum(Role)
+	role: Role;
 
 	@ApiProperty({ example: 'John Doe' })
 	@IsString()

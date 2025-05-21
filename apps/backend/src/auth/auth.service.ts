@@ -61,6 +61,7 @@ export class AuthService {
 				password: hashedPassword,
 				role: Role.ADMIN, // First user of a school is an admin
 				schoolId: school.id,
+				name: registerDto.name || registerDto.email.split('@')[0], // Use email username as fallback
 			},
 		});
 
