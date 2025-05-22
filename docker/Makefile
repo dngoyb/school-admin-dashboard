@@ -12,6 +12,10 @@ down:
 build:
 	docker-compose build backend
 
+# remove images
+remove:
+	docker rm -f school-admin-backend
+
 # View logs for all services
 logs:
 	docker-compose logs -f
@@ -47,7 +51,7 @@ shell:
 # View the health status of services
 health:
 	@echo "=== Backend Health Check ==="
-	@curl -s http://localhost:3000/health | jq . || echo "Backend is not running or health check endpoint is not available"
+	@curl -s http://localhost:3009/health | jq . || echo "Backend is not running or health check endpoint is not available"
 
 # List running containers
 list:

@@ -69,14 +69,14 @@ RUN pnpm install --prod --force --filter @school-admin/backend && \
 
 # Environment variables
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3009
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget -qO- http://localhost:3000/api/health || exit 1
+    CMD wget -qO- http://localhost:3009/api/health || exit 1
 
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 3009
 
 # Run as non-root user
 USER appuser

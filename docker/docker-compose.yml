@@ -47,15 +47,15 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-here}
-      - PORT=${BACKEND_PORT:-3000}
+      - PORT=${BACKEND_PORT:-3009}
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/health || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3009/health || exit 1']
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
     ports:
-      - '${BACKEND_PORT:-3000}:3000'
+      - '${BACKEND_PORT:-3009}:3009'
     depends_on:
       postgres:
         condition: service_healthy
