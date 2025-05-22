@@ -10,7 +10,7 @@ import {
 	AttendanceResponseDto,
 	AttendanceSummaryDto,
 	AttendanceFiltersDto,
-} from './dto/attendance.dto';
+} from './dto';
 import { Prisma, AttendanceStatus } from '@school-admin/database';
 
 @Injectable()

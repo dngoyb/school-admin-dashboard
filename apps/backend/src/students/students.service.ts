@@ -4,11 +4,7 @@ import {
 	ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import {
-	CreateStudentDto,
-	UpdateStudentDto,
-	StudentResponseDto,
-} from './dto/student.dto';
+import { CreateStudentDto, UpdateStudentDto, StudentResponseDto } from './dto';
 import { Prisma } from '@school-admin/database';
 
 @Injectable()

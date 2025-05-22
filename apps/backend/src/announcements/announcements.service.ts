@@ -5,7 +5,7 @@ import {
 	UpdateAnnouncementDto,
 	AnnouncementResponseDto,
 	AnnouncementFiltersDto,
-} from './dto/announcement.dto';
+} from './dto';
 import { Prisma } from '@school-admin/database';
 
 @Injectable()
