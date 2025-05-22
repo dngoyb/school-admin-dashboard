@@ -7,22 +7,40 @@ import {
 	Param,
 	Delete,
 	UseGuards,
+	Query,
+	Version,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
+import {
+	CreateUserDto,
+	UpdateUserDto,
+	UserResponseDto,
+	UserFiltersDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @ApiTags('users')
-@Controller('users')
+@Controller({
+	path: 'users',
+	version: '1',
+})
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
 	@Post()
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Create a new user' })
 	@ApiResponse({
@@ -36,18 +54,20 @@ export class UsersController {
 	}
 
 	@Get()
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Get all users' })
 	@ApiResponse({
 		status: 200,
-		description: 'Return all users',
-		type: [UserResponseDto],
+		description: 'Return paginated users',
+		type: PaginatedResponseDto<UserResponseDto>,
 	})
-	findAll() {
-		return this.usersService.findAll();
+	findAll(@Query() filters?: UserFiltersDto) {
+		return this.usersService.findAll(filters);
 	}
 
 	@Get(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Get a user by id' })
 	@ApiResponse({
@@ -61,6 +81,7 @@ export class UsersController {
 	}
 
 	@Patch(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Update a user' })
 	@ApiResponse({
@@ -75,6 +96,7 @@ export class UsersController {
 	}
 
 	@Delete(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Delete a user' })
 	@ApiResponse({ status: 200, description: 'User deleted successfully' })

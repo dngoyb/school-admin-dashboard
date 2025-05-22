@@ -30,6 +30,7 @@ model School {
     attendanceRecords AttendanceRecord[]
     StudentParent     StudentParent[]
     StudentClass      StudentClass[]
+    grades            Grade[]
 
     @@map("schools")
 }
@@ -52,6 +53,7 @@ model User {
     parent            Parent?
     attendanceRecords AttendanceRecord[]
     announcements     Announcement[]
+    grades            Grade[]
 
     @@map("users")
 }
@@ -76,6 +78,7 @@ model Student {
     classes           StudentClass[]
     parents           StudentParent[]
     attendanceRecords AttendanceRecord[]
+    grades            Grade[]
 
     @@unique([schoolId, studentId])
     @@map("students")
@@ -95,6 +98,7 @@ model Class {
     teacher           Teacher?           @relation(fields: [teacherId], references: [id], onDelete: SetNull)
     students          StudentClass[]
     attendanceRecords AttendanceRecord[]
+    grades            Grade[]
 
     @@map("classes")
 }
@@ -215,6 +219,31 @@ model Announcement {
     @@map("announcements")
 }
 
+model Grade {
+    id           String    @id @default(uuid())
+    type         GradeType
+    value        Float
+    maxValue     Float
+    date         DateTime  @db.Date
+    title        String    @db.VarChar(255)
+    remarks      String?   @db.Text
+    studentId    String
+    classId      String
+    recordedById String
+    schoolId     String
+    createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+    updatedAt    DateTime  @updatedAt @db.Timestamptz(6)
+
+    // Relations
+    student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    class      Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+    recordedBy User    @relation(fields: [recordedById], references: [id], onDelete: Cascade)
+    school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+    @@unique([studentId, classId, date, type, schoolId])
+    @@map("grades")
+}
+
 // Enums
 enum Role {
     ADMIN
@@ -237,4 +266,13 @@ enum AttendanceStatus {
     LATE
     EXCUSED
     UNEXCUSED
+}
+
+enum GradeType {
+    EXAM
+    QUIZ
+    HOMEWORK
+    PROJECT
+    PARTICIPATION
+    OTHER
 }

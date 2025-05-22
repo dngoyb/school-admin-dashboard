@@ -4,8 +4,16 @@ import {
 	ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
+import {
+	CreateUserDto,
+	UpdateUserDto,
+	UserResponseDto,
+	UserFiltersDto,
+} from './dto';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '@school-admin/database';
+import { paginate, getPaginationParams } from '../common/utils/pagination.util';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -40,9 +48,39 @@ export class UsersService {
 		return userWithoutPassword;
 	}
 
-	async findAll(): Promise<UserResponseDto[]> {
-		const users = await this.prisma.user.findMany();
-		return users.map(({ password, ...user }) => user);
+	async findAll(
+		filters?: UserFiltersDto
+	): Promise<PaginatedResponseDto<UserResponseDto>> {
+		const where: Prisma.UserWhereInput = {};
+
+		if (filters) {
+			if (filters.search) {
+				where.OR = [
+					{ name: { contains: filters.search, mode: 'insensitive' } },
+					{ email: { contains: filters.search, mode: 'insensitive' } },
+				];
+			}
+			if (filters.role) {
+				where.role = filters.role;
+			}
+		}
+
+		const { skip, take } = getPaginationParams(filters || {});
+
+		const [users, total] = await Promise.all([
+			this.prisma.user.findMany({
+				where,
+				orderBy: {
+					createdAt: 'desc',
+				},
+				skip,
+				take,
+			}),
+			this.prisma.user.count({ where }),
+		]);
+
+		const usersWithoutPassword = users.map(({ password, ...user }) => user);
+		return paginate(usersWithoutPassword, total, filters || {});
 	}
 
 	async findOne(id: string): Promise<UserResponseDto> {

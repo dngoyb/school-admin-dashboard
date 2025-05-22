@@ -7,6 +7,8 @@ import {
 	AnnouncementFiltersDto,
 } from './dto';
 import { Prisma } from '@school-admin/database';
+import { paginate, getPaginationParams } from '../common/utils/pagination.util';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @Injectable()
 export class AnnouncementsService {
@@ -46,45 +48,56 @@ export class AnnouncementsService {
 	async findAll(
 		schoolId: string,
 		filters?: AnnouncementFiltersDto
-	): Promise<AnnouncementResponseDto[]> {
+	): Promise<PaginatedResponseDto<AnnouncementResponseDto>> {
 		const where: Prisma.AnnouncementWhereInput = {
 			schoolId,
 		};
 
 		if (filters) {
-			if (filters.startDate && filters.endDate) {
-				where.publishedAt = {
-					gte: filters.startDate,
-					lte: filters.endDate,
-				};
-			}
-			if (filters.createdByUserId) {
-				where.createdByUserId = filters.createdByUserId;
-			}
 			if (filters.search) {
 				where.OR = [
 					{ title: { contains: filters.search, mode: 'insensitive' } },
 					{ content: { contains: filters.search, mode: 'insensitive' } },
 				];
 			}
+			if (filters.startDate && filters.endDate) {
+				where.publishedAt = {
+					gte: new Date(filters.startDate),
+					lte: new Date(filters.endDate),
+				};
+			}
+			if (filters.createdByUserId) {
+				where.createdByUserId = filters.createdByUserId;
+			}
 		}
 
-		const announcements = await this.prisma.announcement.findMany({
-			where,
-			include: {
-				createdBy: {
-					select: {
-						id: true,
-						name: true,
+		const { skip, take } = getPaginationParams(filters || {});
+
+		const [announcements, total] = await Promise.all([
+			this.prisma.announcement.findMany({
+				where,
+				include: {
+					createdBy: {
+						select: {
+							id: true,
+							name: true,
+						},
 					},
 				},
-			},
-			orderBy: {
-				publishedAt: 'desc',
-			},
-		});
+				orderBy: {
+					publishedAt: 'desc',
+				},
+				skip,
+				take,
+			}),
+			this.prisma.announcement.count({ where }),
+		]);
 
-		return announcements.map(this.mapAnnouncementToDto);
+		return paginate(
+			announcements.map(this.mapAnnouncementToDto),
+			total,
+			filters || {}
+		);
 	}
 
 	async findOne(

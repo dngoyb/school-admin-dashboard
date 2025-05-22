@@ -1,40 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { PaginationDto } from '../../common/utils/dto/pagination.dto';
 
-export class AnnouncementFiltersDto {
-  @ApiProperty({
-    description: 'Filter announcements published after this date',
-    required: false,
-    example: '2024-01-01T00:00:00.000Z'
-  })
-  @IsDate()
-  @IsOptional()
-  startDate?: Date;
+export class AnnouncementFiltersDto extends PaginationDto {
+	@ApiProperty({
+		description: 'Search term for announcement title or content',
+		required: false,
+	})
+	@IsString()
+	@IsOptional()
+	search?: string;
 
-  @ApiProperty({
-    description: 'Filter announcements published before this date',
-    required: false,
-    example: '2024-12-31T23:59:59.999Z'
-  })
-  @IsDate()
-  @IsOptional()
-  endDate?: Date;
+	@ApiProperty({
+		description: 'Filter by start date',
+		required: false,
+	})
+	@IsDateString()
+	@IsOptional()
+	startDate?: string;
 
-  @ApiProperty({
-    description: 'Filter announcements by creator user ID',
-    required: false,
-    example: '123e4567-e89b-12d3-a456-426614174000'
-  })
-  @IsUUID()
-  @IsOptional()
-  createdByUserId?: string;
+	@ApiProperty({
+		description: 'Filter by end date',
+		required: false,
+	})
+	@IsDateString()
+	@IsOptional()
+	endDate?: string;
 
-  @ApiProperty({
-    description: 'Search term to filter announcements by title or content',
-    required: false,
-    example: 'holiday'
-  })
-  @IsString()
-  @IsOptional()
-  search?: string;
+	@ApiProperty({
+		description: 'Filter by creator user ID',
+		required: false,
+	})
+	@IsString()
+	@IsOptional()
+	createdByUserId?: string;
 }

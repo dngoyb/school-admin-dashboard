@@ -1,18 +1,29 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Role } from '@school-admin/database';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 
+	// Set global prefix for all routes
+	app.setGlobalPrefix('api');
+
+	// Enable API versioning
+	app.enableVersioning({
+		type: VersioningType.URI,
+		defaultVersion: '1',
+	});
+
 	// Enable validation
 	app.useGlobalPipes(
 		new ValidationPipe({
 			whitelist: true, // Strip properties that don't have decorators
 			transform: true, // Transform payloads to DTO instances
-			forbidNonWhitelisted: true, // Throw errors if non-whitelisted properties are present
+			transformOptions: {
+				enableImplicitConversion: true,
+			},
 		})
 	);
 
@@ -41,6 +52,7 @@ async function bootstrap() {
 		.addTag('attendance', 'Attendance management endpoints')
 		.addTag('classes', 'Class management endpoints')
 		.addTag('announcements', 'Announcement management endpoints')
+		.addTag('grades', 'Grade management endpoints')
 		.addBearerAuth(
 			{
 				type: 'http',
@@ -54,13 +66,29 @@ async function bootstrap() {
 		)
 		.build();
 
-	const document = SwaggerModule.createDocument(app, config);
+	const document = SwaggerModule.createDocument(app, config, {
+		include: [], // Include all modules by default
+		deepScanRoutes: true,
+	});
+
+	// Add version prefix to Swagger UI
 	SwaggerModule.setup('api/docs', app, document, {
 		swaggerOptions: {
 			persistAuthorization: true, // This will persist the authorization token across page refreshes
 			tagsSorter: 'alpha',
 			operationsSorter: 'alpha',
 		},
+		customSiteTitle: 'School Admin API Documentation',
+		customfavIcon: '/favicon.ico',
+		customJs: [
+			'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
+			'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js',
+		],
+		customCssUrl: [
+			'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+			'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.css',
+			'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.css',
+		],
 	});
 
 	// Start the server with port fallback

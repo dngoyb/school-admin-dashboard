@@ -8,6 +8,7 @@ import {
 	Delete,
 	Query,
 	UseGuards,
+	Version,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -16,20 +17,30 @@ import {
 	ApiBearerAuth,
 } from '@nestjs/swagger';
 import { StudentsService } from './students.service';
-import { CreateStudentDto, UpdateStudentDto, StudentResponseDto } from './dto';
+import {
+	CreateStudentDto,
+	UpdateStudentDto,
+	StudentResponseDto,
+	StudentFiltersDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @ApiTags('students')
-@Controller('students')
+@Controller({
+	path: 'students',
+	version: '1',
+})
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class StudentsController {
 	constructor(private readonly studentsService: StudentsService) {}
 
 	@Post()
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Create a new student' })
 	@ApiResponse({
@@ -43,6 +54,7 @@ export class StudentsController {
 	}
 
 	@Get()
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get all students in a school' })
 	@ApiResponse({
@@ -55,6 +67,7 @@ export class StudentsController {
 	}
 
 	@Get(':id')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get a student by id' })
 	@ApiResponse({
@@ -68,6 +81,7 @@ export class StudentsController {
 	}
 
 	@Get('school/:schoolId/student/:studentId')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get a student by school ID and student ID' })
 	@ApiResponse({
@@ -84,6 +98,7 @@ export class StudentsController {
 	}
 
 	@Patch(':id')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Update a student' })
 	@ApiResponse({
@@ -98,6 +113,7 @@ export class StudentsController {
 	}
 
 	@Delete(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Delete a student' })
 	@ApiResponse({ status: 200, description: 'Student deleted successfully' })
@@ -107,6 +123,7 @@ export class StudentsController {
 	}
 
 	@Get(':id/classes')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get student classes' })
 	@ApiResponse({ status: 200, description: 'Return student classes' })
@@ -116,6 +133,7 @@ export class StudentsController {
 	}
 
 	@Get(':id/parents')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Get student parents' })
 	@ApiResponse({ status: 200, description: 'Return student parents' })
@@ -125,6 +143,7 @@ export class StudentsController {
 	}
 
 	@Get(':id/attendance')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get student attendance records' })
 	@ApiResponse({

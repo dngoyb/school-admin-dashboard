@@ -9,6 +9,7 @@ import {
 	Query,
 	UseGuards,
 	Request,
+	Version,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 interface RequestWithUser extends Request {
 	user: {
@@ -38,13 +40,17 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('announcements')
-@Controller('announcements')
+@Controller({
+	path: 'announcements',
+	version: '1',
+})
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class AnnouncementsController {
 	constructor(private readonly announcementsService: AnnouncementsService) {}
 
 	@Post()
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Create a new announcement' })
 	@ApiResponse({
@@ -64,12 +70,17 @@ export class AnnouncementsController {
 	}
 
 	@Get()
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
-	@ApiOperation({ summary: 'Get all announcements for the school' })
+	@ApiOperation({
+		summary: 'Get all announcements for the school',
+		description:
+			'Returns paginated announcements with optional filtering by search term, date range, and creator.',
+	})
 	@ApiResponse({
 		status: 200,
-		description: 'Return all announcements',
-		type: [AnnouncementResponseDto],
+		description: 'Return paginated announcements',
+		type: PaginatedResponseDto<AnnouncementResponseDto>,
 	})
 	findAll(
 		@Query() filters: AnnouncementFiltersDto,
@@ -79,6 +90,7 @@ export class AnnouncementsController {
 	}
 
 	@Get('my-announcements')
+	@Version('1')
 	@ApiOperation({ summary: 'Get announcements relevant to the current user' })
 	@ApiResponse({
 		status: 200,
@@ -113,6 +125,7 @@ export class AnnouncementsController {
 	}
 
 	@Get(':id')
+	@Version('1')
 	@ApiOperation({ summary: 'Get an announcement by id' })
 	@ApiResponse({
 		status: 200,
@@ -125,6 +138,7 @@ export class AnnouncementsController {
 	}
 
 	@Patch(':id')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Update an announcement' })
 	@ApiResponse({
@@ -146,6 +160,7 @@ export class AnnouncementsController {
 	}
 
 	@Delete(':id')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Delete an announcement' })
 	@ApiResponse({

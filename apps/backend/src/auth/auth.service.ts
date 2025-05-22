@@ -4,12 +4,14 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { Role } from '@school-admin/database';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
 	constructor(
 		private prisma: PrismaService,
-		private jwtService: JwtService
+		private jwtService: JwtService,
+		private configService: ConfigService
 	) {}
 
 	async validateUser(email: string, password: string) {
@@ -28,8 +30,21 @@ export class AuthService {
 		}
 
 		const payload = { email: user.email, sub: user.id, role: user.role };
+		const [access_token, refresh_token] = await Promise.all([
+			this.jwtService.sign(payload, {
+				expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1d'),
+			}),
+			this.jwtService.sign(payload, {
+				expiresIn: this.configService.get<string>(
+					'JWT_REFRESH_EXPIRES_IN',
+					'7d'
+				),
+			}),
+		]);
+
 		return {
-			access_token: this.jwtService.sign(payload),
+			access_token,
+			refresh_token,
 			user,
 		};
 	}
@@ -70,5 +85,32 @@ export class AuthService {
 			user: result,
 			school,
 		};
+	}
+
+	async refreshToken(refreshToken: string) {
+		try {
+			const payload = await this.jwtService.verifyAsync(refreshToken, {
+				secret: this.configService.get<string>('JWT_SECRET'),
+			});
+
+			const user = await this.prisma.user.findUnique({
+				where: { id: payload.sub },
+			});
+
+			if (!user) {
+				throw new UnauthorizedException('Invalid refresh token');
+			}
+
+			const newPayload = { email: user.email, sub: user.id, role: user.role };
+			const access_token = await this.jwtService.signAsync(newPayload, {
+				expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1d'),
+			});
+
+			return {
+				access_token,
+			};
+		} catch (error) {
+			throw new UnauthorizedException('Invalid refresh token');
+		}
 	}
 }

@@ -4,15 +4,33 @@ import {
 	ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { CreateClassDto, UpdateClassDto, ClassResponseDto } from './dto';
-import { Prisma, Class, Teacher, User } from '@prisma/client';
+import {
+	CreateClassDto,
+	UpdateClassDto,
+	ClassResponseDto,
+	ClassFiltersDto,
+} from './dto';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
+import {
+	Prisma,
+	Class,
+	Teacher,
+	User,
+	Student,
+	StudentClass,
+} from '@prisma/client';
 
-type ClassWithTeacher = Class & {
+type ClassWithRelations = Class & {
 	teacher?:
 		| (Teacher & {
-				user: Pick<User, 'name'>;
+				user: Pick<User, 'name' | 'email'> | null;
 		  })
 		| null;
+	students?: (StudentClass & {
+		student: Student & {
+			user: Pick<User, 'name' | 'email'> | null;
+		};
+	})[];
 };
 
 @Injectable()
@@ -23,8 +41,25 @@ export class ClassesService {
 		createClassDto: CreateClassDto,
 		schoolId: string
 	): Promise<ClassResponseDto> {
+		// Verify teacher exists and belongs to the same school if teacherId is provided
+		if (createClassDto.teacherId) {
+			const teacher = await this.prisma.teacher.findFirst({
+				where: {
+					id: createClassDto.teacherId,
+					schoolId: schoolId,
+				},
+			});
+
+			if (!teacher) {
+				throw new NotFoundException(
+					'Teacher not found or does not belong to this school'
+				);
+			}
+		}
+
 		const data: Prisma.ClassCreateInput = {
-			...createClassDto,
+			name: createClassDto.name,
+			academicYear: createClassDto.academicYear,
 			school: { connect: { id: schoolId } },
 		};
 
@@ -32,19 +67,29 @@ export class ClassesService {
 			data.teacher = { connect: { id: createClassDto.teacherId } };
 		}
 
-		const classEntity = await this.prisma.class.create({ data });
-		return this.mapToResponseDto(classEntity);
-	}
-
-	async findAll(schoolId: string): Promise<ClassResponseDto[]> {
-		const classes = await this.prisma.class.findMany({
-			where: { schoolId },
+		const classEntity = await this.prisma.class.create({
+			data,
 			include: {
 				teacher: {
 					include: {
 						user: {
 							select: {
 								name: true,
+								email: true,
+							},
+						},
+					},
+				},
+				students: {
+					include: {
+						student: {
+							include: {
+								user: {
+									select: {
+										name: true,
+										email: true,
+									},
+								},
 							},
 						},
 					},
@@ -52,7 +97,76 @@ export class ClassesService {
 			},
 		});
 
-		return classes.map(this.mapToResponseDto);
+		return this.mapToResponseDto(classEntity);
+	}
+
+	async findAll(
+		schoolId: string,
+		filters: ClassFiltersDto
+	): Promise<PaginatedResponseDto<ClassResponseDto>> {
+		const { page = 1, limit = 10, search, teacherId, academicYear } = filters;
+		const skip = (page - 1) * limit;
+
+		const where: Prisma.ClassWhereInput = {
+			schoolId,
+			AND: [
+				search
+					? {
+							name: { contains: search, mode: 'insensitive' },
+						}
+					: {},
+				teacherId ? { teacherId } : {},
+				academicYear ? { academicYear } : {},
+			],
+		};
+
+		const [classes, total] = await Promise.all([
+			this.prisma.class.findMany({
+				where,
+				skip,
+				take: limit,
+				include: {
+					teacher: {
+						include: {
+							user: {
+								select: {
+									name: true,
+									email: true,
+								},
+							},
+						},
+					},
+					students: {
+						include: {
+							student: {
+								include: {
+									user: {
+										select: {
+											name: true,
+											email: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				orderBy: { createdAt: 'desc' },
+			}),
+			this.prisma.class.count({ where }),
+		]);
+
+		const totalPages = Math.ceil(total / limit);
+
+		return {
+			items: classes.map(this.mapToResponseDto),
+			total,
+			page,
+			limit,
+			totalPages,
+			hasNext: page < totalPages,
+			hasPrevious: page > 1,
+		};
 	}
 
 	async findOne(id: string, schoolId: string): Promise<ClassResponseDto> {
@@ -64,6 +178,21 @@ export class ClassesService {
 						user: {
 							select: {
 								name: true,
+								email: true,
+							},
+						},
+					},
+				},
+				students: {
+					include: {
+						student: {
+							include: {
+								user: {
+									select: {
+										name: true,
+										email: true,
+									},
+								},
 							},
 						},
 					},
@@ -115,6 +244,21 @@ export class ClassesService {
 						user: {
 							select: {
 								name: true,
+								email: true,
+							},
+						},
+					},
+				},
+				students: {
+					include: {
+						student: {
+							include: {
+								user: {
+									select: {
+										name: true,
+										email: true,
+									},
+								},
 							},
 						},
 					},
@@ -144,13 +288,35 @@ export class ClassesService {
 		});
 	}
 
-	private mapToResponseDto(classEntity: ClassWithTeacher): ClassResponseDto {
+	private mapToResponseDto(classEntity: ClassWithRelations): ClassResponseDto {
 		return {
 			id: classEntity.id,
 			name: classEntity.name,
 			academicYear: classEntity.academicYear,
 			schoolId: classEntity.schoolId,
-			teacherId: classEntity.teacherId || undefined,
+			teacher: classEntity.teacher?.user
+				? {
+						id: classEntity.teacher.id,
+						firstName: classEntity.teacher.user.name.split(' ')[0],
+						lastName: classEntity.teacher.user.name
+							.split(' ')
+							.slice(1)
+							.join(' '),
+						email: classEntity.teacher.user.email,
+					}
+				: null,
+			students:
+				classEntity.students
+					?.filter((studentClass) => studentClass.student.user)
+					.map((studentClass) => ({
+						id: studentClass.student.id,
+						firstName: studentClass.student.user!.name.split(' ')[0],
+						lastName: studentClass.student
+							.user!.name.split(' ')
+							.slice(1)
+							.join(' '),
+						email: studentClass.student.user!.email,
+					})) || [],
 			createdAt: classEntity.createdAt,
 			updatedAt: classEntity.updatedAt,
 		};

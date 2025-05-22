@@ -12,6 +12,7 @@ import {
 	AttendanceFiltersDto,
 } from './dto';
 import { Prisma, AttendanceStatus } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -152,7 +153,7 @@ export class AttendanceService {
 		studentId: string,
 		schoolId: string,
 		filters?: AttendanceFiltersDto
-	): Promise<AttendanceResponseDto[]> {
+	): Promise<PaginatedResponseDto<AttendanceResponseDto>> {
 		// Check if student exists and belongs to school
 		const student = await this.prisma.student.findFirst({
 			where: {
@@ -186,28 +187,49 @@ export class AttendanceService {
 			}
 		}
 
-		return this.prisma.attendanceRecord.findMany({
-			where,
-			include: {
-				class: true,
-				recordedBy: {
-					select: {
-						id: true,
-						name: true,
+		const page = filters?.page || 1;
+		const limit = filters?.limit || 10;
+		const skip = (page - 1) * limit;
+
+		const [total, items] = await Promise.all([
+			this.prisma.attendanceRecord.count({ where }),
+			this.prisma.attendanceRecord.findMany({
+				where,
+				include: {
+					class: true,
+					recordedBy: {
+						select: {
+							id: true,
+							name: true,
+						},
 					},
 				},
-			},
-			orderBy: {
-				date: 'desc',
-			},
-		});
+				orderBy: {
+					date: 'desc',
+				},
+				skip,
+				take: limit,
+			}),
+		]);
+
+		const totalPages = Math.ceil(total / limit);
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			totalPages,
+			hasNext: page < totalPages,
+			hasPrevious: page > 1,
+		};
 	}
 
 	async getClassAttendance(
 		classId: string,
 		schoolId: string,
 		filters?: AttendanceFiltersDto
-	): Promise<AttendanceResponseDto[]> {
+	): Promise<PaginatedResponseDto<AttendanceResponseDto>> {
 		// Check if class exists and belongs to school
 		const classExists = await this.prisma.class.findFirst({
 			where: {
@@ -240,26 +262,47 @@ export class AttendanceService {
 			}
 		}
 
-		return this.prisma.attendanceRecord.findMany({
-			where,
-			include: {
-				student: {
-					select: {
-						id: true,
-						firstName: true,
-						lastName: true,
-						studentId: true,
+		const page = filters?.page || 1;
+		const limit = filters?.limit || 10;
+		const skip = (page - 1) * limit;
+
+		const [total, items] = await Promise.all([
+			this.prisma.attendanceRecord.count({ where }),
+			this.prisma.attendanceRecord.findMany({
+				where,
+				include: {
+					student: {
+						select: {
+							id: true,
+							firstName: true,
+							lastName: true,
+							studentId: true,
+						},
+					},
+					recordedBy: {
+						select: {
+							id: true,
+							name: true,
+						},
 					},
 				},
-				recordedBy: {
-					select: {
-						id: true,
-						name: true,
-					},
-				},
-			},
-			orderBy: [{ date: 'desc' }, { student: { firstName: 'asc' } }],
-		});
+				orderBy: [{ date: 'desc' }, { student: { firstName: 'asc' } }],
+				skip,
+				take: limit,
+			}),
+		]);
+
+		const totalPages = Math.ceil(total / limit);
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			totalPages,
+			hasNext: page < totalPages,
+			hasPrevious: page > 1,
+		};
 	}
 
 	async getAttendanceSummary(

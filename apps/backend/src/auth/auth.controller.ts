@@ -1,28 +1,82 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+	Controller,
+	Post,
+	Body,
+	HttpCode,
+	HttpStatus,
+	Version,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { LoginDto, RegisterDto } from './dto';
+import { LoginDto, RegisterDto, RefreshTokenDto } from './dto';
+import { Throttle } from '../common/decorators/throttle.decorator';
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller({
+	path: 'auth',
+	version: '1',
+})
 export class AuthController {
 	constructor(private readonly authService: AuthService) {}
 
 	@Post('login')
+	@Version('1')
 	@HttpCode(HttpStatus.OK)
-	@ApiOperation({ summary: 'Login user' })
-	@ApiResponse({ status: 200, description: 'User logged in successfully' })
+	@ApiOperation({
+		summary: 'Login user',
+		description:
+			'Authenticates a user and returns JWT tokens. Rate limited: 5 requests per minute.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'User authenticated successfully',
+		schema: {
+			type: 'object',
+			properties: {
+				accessToken: {
+					type: 'string',
+					example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+				},
+				refreshToken: {
+					type: 'string',
+					example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+				},
+				user: {
+					type: 'object',
+					properties: {
+						id: {
+							type: 'string',
+							example: '123e4567-e89b-12d3-a456-426614174000',
+						},
+						email: { type: 'string', example: 'user@school.com' },
+						name: { type: 'string', example: 'John Doe' },
+						role: {
+							type: 'string',
+							enum: ['ADMIN', 'TEACHER', 'PARENT'],
+							example: 'TEACHER',
+						},
+						schoolId: {
+							type: 'string',
+							example: '123e4567-e89b-12d3-a456-426614174001',
+						},
+					},
+				},
+			},
+		},
+	})
 	@ApiResponse({ status: 401, description: 'Invalid credentials' })
-	async login(@Body() loginDto: LoginDto) {
+	login(@Body() loginDto: LoginDto) {
 		return this.authService.login(loginDto.email, loginDto.password);
 	}
 
 	@Post('register')
+	@Version('1')
+	@Throttle(3, 3600) // 3 requests per hour
 	@HttpCode(HttpStatus.CREATED)
 	@ApiOperation({
 		summary: 'Register new school and admin user',
 		description:
-			'Creates a new school and its first admin user. The first user will be granted admin privileges.',
+			'Creates a new school and its first admin user. Rate limited: 3 requests per hour.',
 	})
 	@ApiResponse({
 		status: 201,
@@ -70,34 +124,20 @@ export class AuthController {
 			},
 		},
 	})
-	@ApiResponse({
-		status: 400,
-		description: 'Invalid input',
-		schema: {
-			type: 'object',
-			properties: {
-				statusCode: { type: 'number', example: 400 },
-				message: {
-					type: 'array',
-					items: { type: 'string', example: 'email must be an email' },
-				},
-				error: { type: 'string', example: 'Bad Request' },
-			},
-		},
-	})
-	@ApiResponse({
-		status: 409,
-		description: 'Email already exists',
-		schema: {
-			type: 'object',
-			properties: {
-				statusCode: { type: 'number', example: 409 },
-				message: { type: 'string', example: 'Email already exists' },
-				error: { type: 'string', example: 'Conflict' },
-			},
-		},
-	})
-	async register(@Body() registerDto: RegisterDto) {
+	@ApiResponse({ status: 400, description: 'Invalid input' })
+	register(@Body() registerDto: RegisterDto) {
 		return this.authService.register(registerDto);
+	}
+
+	@Post('refresh')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({
+		summary: 'Refresh access token',
+		description: 'Exchanges a refresh token for a new access token.',
+	})
+	@ApiResponse({ status: 200, description: 'Token refreshed successfully.' })
+	@ApiResponse({ status: 401, description: 'Invalid refresh token.' })
+	async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+		return this.authService.refreshToken(refreshTokenDto.refreshToken);
 	}
 }

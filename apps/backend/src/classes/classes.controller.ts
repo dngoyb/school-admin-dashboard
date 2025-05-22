@@ -8,6 +8,8 @@ import {
 	Delete,
 	UseGuards,
 	Request,
+	Query,
+	Version,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -16,11 +18,17 @@ import {
 	ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
-import { CreateClassDto, UpdateClassDto, ClassResponseDto } from './dto';
+import {
+	CreateClassDto,
+	UpdateClassDto,
+	ClassResponseDto,
+	ClassFiltersDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 interface RequestWithUser extends Request {
 	user: {
@@ -32,13 +40,17 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('classes')
-@Controller('classes')
+@Controller({
+	path: 'classes',
+	version: '1',
+})
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
 export class ClassesController {
 	constructor(private readonly classesService: ClassesService) {}
 
 	@Post()
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Create a new class' })
 	@ApiResponse({
@@ -54,17 +66,24 @@ export class ClassesController {
 	}
 
 	@Get()
-	@ApiOperation({ summary: 'Get all classes for the school' })
+	@Version('1')
+	@Roles(Role.ADMIN, Role.TEACHER)
+	@ApiOperation({
+		summary: 'Get all classes for the school',
+		description:
+			'Returns paginated classes with optional filtering by search term, teacher, and academic year.',
+	})
 	@ApiResponse({
 		status: 200,
-		description: 'Return all classes for the school.',
-		type: [ClassResponseDto],
+		description: 'Return paginated classes',
+		type: PaginatedResponseDto<ClassResponseDto>,
 	})
-	findAll(@Request() req: RequestWithUser) {
-		return this.classesService.findAll(req.user.schoolId);
+	findAll(@Query() filters: ClassFiltersDto, @Request() req: RequestWithUser) {
+		return this.classesService.findAll(req.user.schoolId, filters);
 	}
 
 	@Get(':id')
+	@Version('1')
 	@ApiOperation({ summary: 'Get a class by id' })
 	@ApiResponse({
 		status: 200,
@@ -77,6 +96,7 @@ export class ClassesController {
 	}
 
 	@Patch(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Update a class' })
 	@ApiResponse({
@@ -94,6 +114,7 @@ export class ClassesController {
 	}
 
 	@Delete(':id')
+	@Version('1')
 	@Roles(Role.ADMIN)
 	@ApiOperation({ summary: 'Delete a class' })
 	@ApiResponse({

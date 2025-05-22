@@ -7,6 +7,7 @@ import {
 	Query,
 	UseGuards,
 	Request,
+	Version,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@school-admin/database';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 interface RequestWithUser extends Request {
 	user: {
@@ -37,13 +39,17 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('attendance')
-@Controller('attendance')
+@Controller({
+	path: 'attendance',
+	version: '1',
+})
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class AttendanceController {
 	constructor(private readonly attendanceService: AttendanceService) {}
 
 	@Post()
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Create a new attendance record' })
 	@ApiResponse({
@@ -65,6 +71,7 @@ export class AttendanceController {
 	}
 
 	@Post('bulk')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Create multiple attendance records' })
 	@ApiResponse({
@@ -86,12 +93,13 @@ export class AttendanceController {
 	}
 
 	@Get('students/:studentId')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER, Role.PARENT)
 	@ApiOperation({ summary: 'Get attendance records for a student' })
 	@ApiResponse({
 		status: 200,
-		description: 'Return attendance records for the student',
-		type: [AttendanceResponseDto],
+		description: 'Return paginated attendance records for the student',
+		type: () => PaginatedResponseDto<AttendanceResponseDto>,
 	})
 	@ApiResponse({ status: 404, description: 'Student not found' })
 	getStudentAttendance(
@@ -107,12 +115,13 @@ export class AttendanceController {
 	}
 
 	@Get('classes/:classId')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Get attendance records for a class' })
 	@ApiResponse({
 		status: 200,
-		description: 'Return attendance records for the class',
-		type: [AttendanceResponseDto],
+		description: 'Return paginated attendance records for the class',
+		type: () => PaginatedResponseDto<AttendanceResponseDto>,
 	})
 	@ApiResponse({ status: 404, description: 'Class not found' })
 	getClassAttendance(
@@ -128,6 +137,7 @@ export class AttendanceController {
 	}
 
 	@Get('summary')
+	@Version('1')
 	@Roles(Role.ADMIN, Role.TEACHER)
 	@ApiOperation({ summary: 'Get attendance summary' })
 	@ApiResponse({

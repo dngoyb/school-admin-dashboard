@@ -4,8 +4,15 @@ import {
 	ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { CreateStudentDto, UpdateStudentDto, StudentResponseDto } from './dto';
+import {
+	CreateStudentDto,
+	UpdateStudentDto,
+	StudentResponseDto,
+	StudentFiltersDto,
+} from './dto';
 import { Prisma } from '@school-admin/database';
+import { paginate, getPaginationParams } from '../common/utils/pagination.util';
+import { PaginatedResponseDto } from '../common/utils/dto/pagination.dto';
 
 @Injectable()
 export class StudentsService {
@@ -34,16 +41,59 @@ export class StudentsService {
 		return student;
 	}
 
-	async findAll(schoolId: string): Promise<StudentResponseDto[]> {
-		return this.prisma.student.findMany({
-			where: {
-				schoolId,
-				isDeleted: false,
-			},
-			orderBy: {
-				createdAt: 'desc',
-			},
-		});
+	async findAll(
+		schoolId: string,
+		filters?: StudentFiltersDto
+	): Promise<PaginatedResponseDto<StudentResponseDto>> {
+		const where: Prisma.StudentWhereInput = {
+			schoolId,
+			isDeleted: false,
+		};
+
+		if (filters) {
+			if (filters.search) {
+				where.OR = [
+					{ firstName: { contains: filters.search, mode: 'insensitive' } },
+					{ lastName: { contains: filters.search, mode: 'insensitive' } },
+					{ studentId: { contains: filters.search, mode: 'insensitive' } },
+				];
+			}
+			if (filters.classId) {
+				where.classes = {
+					some: {
+						classId: filters.classId,
+					},
+				};
+			}
+		}
+
+		const { skip, take } = getPaginationParams(filters || {});
+
+		const [students, total] = await Promise.all([
+			this.prisma.student.findMany({
+				where,
+				orderBy: {
+					createdAt: 'desc',
+				},
+				skip,
+				take,
+				include: {
+					classes: {
+						include: {
+							class: {
+								select: {
+									id: true,
+									name: true,
+								},
+							},
+						},
+					},
+				},
+			}),
+			this.prisma.student.count({ where }),
+		]);
+
+		return paginate(students, total, filters || {});
 	}
 
 	async findOne(id: string): Promise<StudentResponseDto> {
