@@ -31,6 +31,7 @@ model School {
     StudentParent     StudentParent[]
     StudentClass      StudentClass[]
     grades            Grade[]
+    ImportantDate     ImportantDate[]
 
     @@map("schools")
 }
@@ -126,24 +127,25 @@ model Teacher {
 }
 
 model Parent {
-    id                String   @id @default(uuid())
-    userId            String?  @unique
+    id                String         @id @default(uuid())
+    userId            String?        @unique
     schoolId          String
-    firstName         String   @db.VarChar(255)
-    lastName          String   @db.VarChar(255)
-    relationToStudent String   @db.VarChar(50)
-    contactPhone      String?  @db.VarChar(50)
-    contactEmail      String?  @db.VarChar(255)
-    contactAddress    String?  @db.Text
-    createdAt         DateTime @default(now()) @db.Timestamptz(6)
-    updatedAt         DateTime @updatedAt @db.Timestamptz(6)
-    isDeleted         Boolean  @default(false)
+    firstName         String         @db.VarChar(255)
+    lastName          String         @db.VarChar(255)
+    relationToStudent ParentRelation @default(OTHER)
+    contactPhone      String?        @db.VarChar(50)
+    contactEmail      String?        @db.VarChar(255)
+    createdAt         DateTime       @default(now()) @db.Timestamptz(6)
+    updatedAt         DateTime       @updatedAt @db.Timestamptz(6)
+    isDeleted         Boolean        @default(false)
 
     // Relations
     school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
     user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
     students StudentParent[]
 
+    @@index([schoolId])
+    @@index([userId])
     @@map("parents")
 }
 
@@ -275,4 +277,57 @@ enum GradeType {
     PROJECT
     PARTICIPATION
     OTHER
+}
+
+enum ParentRelation {
+    MOTHER
+    FATHER
+    GUARDIAN
+    GRANDPARENT
+    OTHER
+}
+
+enum MessageStatus {
+    SENT
+    DELIVERED
+    READ
+}
+
+enum DocumentType {
+    REPORT_CARD
+    PROGRESS_REPORT
+    PERMISSION_FORM
+    MEDICAL_FORM
+    EMERGENCY_CONTACT
+    FIELD_TRIP_CONSENT
+    OTHER
+}
+
+enum DateType {
+    EXAM
+    HOLIDAY
+    EVENT
+    DEADLINE
+    PARENT_TEACHER_MEETING
+    OTHER
+}
+
+model ImportantDate {
+    id          String   @id @default(uuid())
+    schoolId    String
+    title       String   @db.VarChar(255)
+    description String?  @db.Text
+    date        DateTime @db.Timestamptz(6)
+    type        DateType
+    isRecurring Boolean  @default(false)
+    recurrence  Json? // Store recurrence rules if isRecurring is true
+    createdAt   DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+    // Relations
+    school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+    @@index([schoolId])
+    @@index([date])
+    @@map("important_dates")
 }
