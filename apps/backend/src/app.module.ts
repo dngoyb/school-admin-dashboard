@@ -12,6 +12,7 @@ import { HealthController } from './common/health/health.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { TeachersModule } from './teachers/teachers.module';
+import { ParentsModule } from './parents/parents.module';
 
 @Module({
 	imports: [
@@ -30,6 +31,7 @@ import { TeachersModule } from './teachers/teachers.module';
 		AnnouncementsModule,
 		GradesModule,
 		TeachersModule,
+		ParentsModule,
 		// Throttler module for rate limiting
 		ThrottlerModule.forRoot({
 			throttlers: [

@@ -9,8 +9,8 @@ This document outlines the revised plan for the frontend development of the Scho
 * **Styling:** Tailwind CSS with Shadcn UI  
 * **Form Validation:** Zod  
 * **State Management:** Zustand (for UI state, global settings)  
-* **API Data Management:** React Query or SWR (Recommended for server state/caching)  
-* **API Communication:** Standard Fetch API or a library like Axios (Used by React Query/SWR or directly)  
+* **API Data Management:** React Query (Recommended for server state/caching)  
+* **API Communication:** Standard Fetch API or a library like Axios (Used by React Query)  
 * **Authentication:** JWT (JSON Web Tokens)
 
 **1\. Goals and Objectives:**
@@ -130,3 +130,440 @@ As the backend and features expand (driven by database additions and new REST en
 * Consider performance optimizations like code splitting and lazy loading components.
 
 By incorporating a dedicated data fetching library like React Query or SWR and centralizing your API communication logic, you can significantly improve the efficiency and maintainability of your frontend when working with a RESTful backend.
+
+**12. API Layer Organization:**
+
+* **Feature-based API Modules:**
+  * Organize API calls into feature-based modules (e.g., `api/auth.ts`, `api/students.ts`)
+  * Create custom hooks for common API patterns (e.g., `useAuth`, `useStudents`)
+  * Implement consistent error handling and response typing
+  * Example structure:
+    ```typescript
+    // api/students.ts
+    export const studentsApi = {
+      getAll: (params: StudentQueryParams) => 
+        api.get('/students', { params }),
+      getById: (id: string) => 
+        api.get(`/students/${id}`),
+      create: (data: CreateStudentDto) => 
+        api.post('/students', data),
+      // ... other student-related API calls
+    };
+
+    // hooks/useStudents.ts
+    export const useStudents = (params: StudentQueryParams) => {
+      return useQuery(['students', params], () => 
+        studentsApi.getAll(params)
+      );
+    };
+    ```
+
+* **API Versioning Strategy:**
+  * Implement version prefix in API URLs (e.g., `/api/v1/students`)
+  * Create version-specific API clients
+  * Handle version deprecation gracefully
+  * Document version migration guides
+
+**13. Enhanced Error Handling Strategy:**
+
+* **Global Error Handling:**
+  * Implement React Error Boundaries for component-level errors
+  * Create a global error handler for API errors
+  * Define custom error types and messages
+  * Example error boundary:
+    ```typescript
+    class ErrorBoundary extends React.Component {
+      state = { hasError: false, error: null };
+      
+      static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+      }
+      
+      render() {
+        if (this.state.hasError) {
+          return <ErrorFallback error={this.state.error} />;
+        }
+        return this.props.children;
+      }
+    }
+    ```
+
+* **Error Notification System:**
+  * Implement toast notifications for non-critical errors
+  * Create dedicated error pages for critical failures
+  * Add error logging and monitoring
+  * Example toast implementation:
+    ```typescript
+    const useErrorToast = () => {
+      return useToast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred. Please try again.",
+      });
+    };
+    ```
+
+**14. Performance Optimization:**
+
+* **Code Splitting:**
+  * Implement dynamic imports for route-based code splitting
+  * Use React.lazy for component-level code splitting
+  * Example:
+    ```typescript
+    const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+    const Students = React.lazy(() => import('./pages/Students'));
+    ```
+
+* **Bundle Optimization:**
+  * Configure webpack/vite for optimal bundle size
+  * Implement tree shaking
+  * Use dynamic imports for large dependencies
+  * Monitor bundle size with tools like `webpack-bundle-analyzer`
+
+* **Caching Strategies:**
+  * Configure React Query caching policies
+  * Implement stale-while-revalidate pattern
+  * Use service workers for offline support
+  * Example React Query cache configuration:
+    ```typescript
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000, // 5 minutes
+          cacheTime: 30 * 60 * 1000, // 30 minutes
+        },
+      },
+    });
+    ```
+
+**15. Testing Strategy:**
+
+* **Unit Testing:**
+  * Use Jest and React Testing Library
+  * Test component rendering and interactions
+  * Test custom hooks and utilities
+  * Example component test:
+    ```typescript
+    describe('StudentList', () => {
+      it('renders student data correctly', () => {
+        render(<StudentList students={mockStudents} />);
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
+      });
+    });
+    ```
+
+* **Integration Testing:**
+  * Test component interactions
+  * Test API integration
+  * Use MSW for API mocking
+  * Example integration test:
+    ```typescript
+    describe('StudentForm', () => {
+      it('submits form data correctly', async () => {
+        render(<StudentForm />);
+        await userEvent.type(screen.getByLabelText('Name'), 'John Doe');
+        await userEvent.click(screen.getByText('Submit'));
+        expect(mockApi.createStudent).toHaveBeenCalledWith({
+          name: 'John Doe',
+        });
+      });
+    });
+    ```
+
+* **E2E Testing:**
+  * Use Cypress or Playwright
+  * Test critical user flows
+  * Implement visual regression testing
+  * Example Cypress test:
+    ```typescript
+    describe('Student Management', () => {
+      it('creates a new student', () => {
+        cy.visit('/students');
+        cy.get('[data-testid="add-student"]').click();
+        cy.get('[name="name"]').type('John Doe');
+        cy.get('[type="submit"]').click();
+        cy.contains('Student created successfully');
+      });
+    });
+    ```
+
+**16. Security Considerations:**
+
+* **JWT Token Management:**
+  * Implement secure token storage
+  * Handle token refresh flow
+  * Implement token expiration handling
+  * Example token refresh:
+    ```typescript
+    const refreshToken = async () => {
+      const response = await api.post('/auth/refresh');
+      setToken(response.data.token);
+      return response.data.token;
+    };
+    ```
+
+* **Security Headers:**
+  * Configure Content Security Policy
+  * Implement CORS policies
+  * Set up XSS protection
+  * Example security headers:
+    ```typescript
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+        },
+      },
+    }));
+    ```
+
+**17. Component Architecture:**
+
+* **Component Organization:**
+  * Follow atomic design principles
+  * Create reusable component library
+  * Implement compound components
+  * Example component structure:
+    ```
+    components/
+      atoms/
+        Button/
+        Input/
+      molecules/
+        FormField/
+        Card/
+      organisms/
+        StudentCard/
+        Navigation/
+      templates/
+        DashboardLayout/
+        AuthLayout/
+    ```
+
+* **Component Documentation:**
+  * Use Storybook for component documentation
+  * Document props and usage examples
+  * Include accessibility information
+  * Example Storybook story:
+    ```typescript
+    export default {
+      title: 'Components/Button',
+      component: Button,
+      argTypes: {
+        variant: {
+          options: ['primary', 'secondary'],
+          control: { type: 'select' },
+        },
+      },
+    };
+    ```
+
+**18. Internationalization (i18n):**
+
+* **Implementation:**
+  * Use react-i18next for translations
+  * Implement language detection
+  * Handle RTL languages
+  * Example i18n setup:
+    ```typescript
+    const resources = {
+      en: { translation: enTranslations },
+      fr: { translation: frTranslations },
+    };
+
+    i18n.init({
+      resources,
+      lng: 'en',
+      fallbackLng: 'en',
+    });
+    ```
+
+* **Formatting:**
+  * Use date-fns for date formatting
+  * Implement number formatting
+  * Handle currency display
+  * Example formatting:
+    ```typescript
+    const formatDate = (date: Date) => {
+      return format(date, 'PPP', { locale: i18n.language });
+    };
+    ```
+
+**19. Monitoring and Analytics:**
+
+* **Error Tracking:**
+  * Implement Sentry for error tracking
+  * Set up error logging
+  * Create error reporting dashboard
+  * Example Sentry setup:
+    ```typescript
+    Sentry.init({
+      dsn: "your-dsn",
+      environment: process.env.NODE_ENV,
+      tracesSampleRate: 1.0,
+    });
+    ```
+
+* **Performance Monitoring:**
+  * Implement Google Analytics
+  * Track user interactions
+  * Monitor page load times
+  * Example analytics setup:
+    ```typescript
+    const trackPageView = (path: string) => {
+      gtag('config', 'GA-MEASUREMENT-ID', {
+        page_path: path,
+      });
+    };
+    ```
+
+**20. Development Workflow:**
+
+* **Git Workflow:**
+  * Follow Git Flow or GitHub Flow
+  * Use conventional commits
+  * Implement branch protection
+  * Example commit message:
+    ```
+    feat(students): add student creation form
+    
+    - Add form component with validation
+    - Implement API integration
+    - Add success/error handling
+    ```
+
+* **PR Review Process:**
+  * Create PR template
+  * Define review checklist
+  * Implement automated checks
+  * Example PR checklist:
+    ```markdown
+    ## PR Checklist
+    - [ ] Tests added/updated
+    - [ ] Documentation updated
+    - [ ] Accessibility reviewed
+    - [ ] Performance impact assessed
+    - [ ] Security considerations addressed
+    ```
+
+* **Documentation Requirements:**
+  * Document component usage
+  * Update API documentation
+  * Maintain changelog
+  * Example component documentation:
+    ```typescript
+    /**
+     * StudentCard component displays student information
+     * @param {Student} student - Student data
+     * @param {boolean} editable - Whether the card is editable
+     * @returns {JSX.Element} StudentCard component
+     */
+    export const StudentCard: React.FC<StudentCardProps> = ({
+      student,
+      editable,
+    }) => {
+      // Component implementation
+    };
+    ```
+
+**21. Suggested Implementation Plan (Claude's Suggestion)**
+
+Below is a detailed plan (suggested by Claude) for implementing the frontend as outlined in this document. This plan is intended to guide you from initial setup to a working MVP and beyond.
+
+---
+
+**1. Project Foundation & Core Setup**
+
+- **Folder Structure:** Already organized (e.g., components, hooks, lib, pages, providers, store, types, assets).
+- **Dependencies:** Already installed (react-router-dom, @tanstack/react-query, zustand, zod, react-hook-form, axios, shadcn-ui, etc.).
+- **Tailwind CSS:** Already configured (no separate styles folder needed).
+- **Vite/React/TypeScript:** Already set up.
+
+---
+
+**2. Core App Architecture**
+
+- **Routing:** Use react-router-dom for page navigation.
+- **State Management:** Use zustand for UI/global state (e.g., auth, sidebar, theme) and @tanstack/react-query for server state (students, attendance, announcements, etc.).
+- **API Layer:** Create a reusable API utility (using Axios or Fetch) and organize feature-based API modules (e.g., lib/api/auth.ts, lib/api/students.ts).
+- **Form Handling:** Use react-hook-form with zod for robust form validation.
+- **UI Components:** Use Shadcn UI (or your own atomic components) in components/ui/ and feature components in components/features/.
+
+---
+
+**3. Authentication Flow**
+
+- **Pages:** Create pages/auth/Login.tsx (and, if needed, pages/auth/Register.tsx).
+- **Logic:**
+  - Build a login form (with zod validation) that POSTs to /auth/login.
+  - Store the JWT (e.g., in localStorage or a zustand store) and redirect based on user role.
+  - Implement an auth context/provider (in providers/) to manage user state.
+- **Protected Routes:** Use a route guard (or HOC) to restrict access to authenticated pages.
+
+---
+
+**4. Dashboard & Main Pages**
+
+- **Dashboard:** In pages/dashboard/, fetch summary data and announcements (using React Query) and display them using Shadcn UI (cards, tables, etc.).
+- **Students:** In pages/students/, implement a list view (and CRUD) for students (using React Query for data fetching and zod for form validation).
+- **Attendance:** In pages/attendance/, build an interface for marking and viewing attendance (using forms, tables, and mutation/query hooks).
+- **Announcements:** In pages/announcements/, list and create announcements.
+
+---
+
+**5. Reusable Components & Hooks**
+
+- **UI Components:** Create atomic components (buttons, inputs, modals, etc.) in components/ui/.
+- **Feature Components:** Build feature-specific components (StudentCard, AttendanceTable, etc.) in components/features/.
+- **Custom Hooks:** Write custom hooks (for API calls, auth, etc.) in hooks/.
+
+---
+
+**6. State & API Management**
+
+- **Zustand Stores:** Define stores (e.g., authStore, uiStore) in store/ for global UI state.
+- **React Query:** Use React Query (or SWR) for all server data (students, attendance, announcements, etc.).
+- **API Modules:** Organize API calls into feature-based modules (e.g., lib/api/students.ts, lib/api/auth.ts).
+
+---
+
+**7. Error Handling & UX**
+
+- **Global Error Boundary:** Implement a React Error Boundary (in providers/) to catch and display component errors.
+- **API Error Handling:** Use toast notifications (or alerts) for API errors.
+- **Loading States:** Use skeleton loaders (or spinners) (via Shadcn UI) for loading states.
+
+---
+
+**8. Testing & Linting**
+
+- **Component Tests:** Write unit tests (using Jest and React Testing Library) for components and custom hooks.
+- **API/Hook Tests:** Mock API calls (using MSW) for integration tests.
+- **E2E Tests:** (Optional for MVP) Use Cypress or Playwright for end-to-end tests.
+
+---
+
+**9. Future Enhancements**
+
+- **Role-based UI:** Adjust navigation and UI based on user roles.
+- **Advanced Features:** Reporting, file uploads, notifications, etc.
+- **Internationalization (i18n):** Add support (e.g., using react-i18next).
+- **Analytics & Monitoring:** Integrate Sentry (for error tracking) and Google Analytics.
+
+---
+
+**Suggested Implementation Order**
+
+1. **Set up routing and a basic layout (sidebar, header, etc.).**
+2. **Implement authentication (login page, JWT storage, protected routes).**
+3. **Build the dashboard page (fetch and display summary/announcements).**
+4. **Implement students and attendance pages (CRUD, forms, tables).**
+5. **Add announcements and user management pages.**
+6. **Refine UI with reusable components and error/loading states.**
+7. **Add global state management (Zustand) and custom hooks.**
+8. **Write tests for critical flows.**
+9. **Polish, document, and prepare for deployment.**
+
+---
