@@ -21,13 +21,13 @@ COPY . .
 # Build the database package first
 RUN cd packages/database && \
     pnpm install && \
-    pnpm prisma generate && \
+    pnpm prisma generate --schema=./prisma/schema.prisma && \
     pnpm build && \
     cd ../..
 
 # Ensure Prisma client is generated for production
 RUN cd packages/database && \
-    pnpm prisma generate && \
+    pnpm prisma generate --schema=./prisma/schema.prisma && \
     cd ../..
 
 # Build the backend application
@@ -61,8 +61,8 @@ RUN pnpm install --prod --force --filter @school-admin/backend && \
     pnpm install --prod --force --filter @school-admin/database && \
     cd packages/database && \
     pnpm add -D prisma && \
+    pnpm prisma generate --schema=./prisma/schema.prisma && \
     npm i -g wait-on && \
-    pnpm prisma generate && \
     cd ../.. && \
     # Fix permissions for the non-root user
     chown -R appuser:appgroup /app
