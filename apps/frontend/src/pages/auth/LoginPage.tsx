@@ -13,9 +13,12 @@ import {
 } from '@/components/ui/form';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
+import { useAuthStore } from '@/store/auth';
 
 export function LoginPage() {
 	const navigate = useNavigate();
+	const { login, isLoading, error, clearError } = useAuthStore();
+
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 		defaultValues: {
@@ -26,11 +29,11 @@ export function LoginPage() {
 
 	const onSubmit = async (data: LoginFormData) => {
 		try {
-			// TODO: Implement login logic
-			console.log('Login data:', data);
-			// After successful login, redirect to dashboard
+			clearError();
+			await login(data);
 			navigate('/dashboard');
 		} catch (error) {
+			// Error is handled by the store
 			console.error('Login error:', error);
 		}
 	};
@@ -44,6 +47,12 @@ export function LoginPage() {
 			footerLinkText='Sign up'>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+					{error && (
+						<div className='p-3 text-sm text-red-500 bg-red-50 rounded-md'>
+							{error}
+						</div>
+					)}
+
 					<FormField
 						control={form.control}
 						name='email'
@@ -80,11 +89,8 @@ export function LoginPage() {
 						)}
 					/>
 
-					<Button
-						type='submit'
-						className='w-full'
-						disabled={form.formState.isSubmitting}>
-						{form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
+					<Button type='submit' className='w-full' disabled={isLoading}>
+						{isLoading ? 'Signing in...' : 'Sign in'}
 					</Button>
 				</form>
 			</Form>

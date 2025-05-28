@@ -10,12 +10,16 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
+	FormDescription,
 } from '@/components/ui/form';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
+import { useAuthStore } from '@/store/auth';
 
 export function RegisterPage() {
 	const navigate = useNavigate();
+	const { register, isLoading, error, clearError } = useAuthStore();
+
 	const form = useForm<RegisterFormData>({
 		resolver: zodResolver(registerSchema),
 		defaultValues: {
@@ -29,11 +33,17 @@ export function RegisterPage() {
 
 	const onSubmit = async (data: RegisterFormData) => {
 		try {
-			// TODO: Implement registration logic
-			console.log('Register data:', data);
-			// After successful registration, redirect to login
-			navigate('/auth/login');
+			clearError();
+			// Transform the data to match the backend's expected format
+			const registerData = {
+				email: data.email,
+				password: data.password,
+				name: `${data.firstName} ${data.lastName}`,
+			};
+			await register(registerData);
+			navigate('/dashboard');
 		} catch (error) {
+			// Error is handled by the store
 			console.error('Registration error:', error);
 		}
 	};
@@ -41,12 +51,12 @@ export function RegisterPage() {
 	return (
 		<AuthLayout
 			title='Create an account'
-			subtitle='Enter your information to create your account'
+			subtitle='Enter your information to create an account'
 			footerText='Already have an account?'
-			footerLink='/auth/login'
-			footerLinkText='Sign in'>
+			footerLink='/login'
+			footerLinkText='Login'>
 			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+				<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
 					<div className='grid grid-cols-2 gap-4'>
 						<FormField
 							control={form.control}
@@ -55,13 +65,12 @@ export function RegisterPage() {
 								<FormItem>
 									<FormLabel>First Name</FormLabel>
 									<FormControl>
-										<Input placeholder='Enter your first name' {...field} />
+										<Input placeholder='John' {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}
 						/>
-
 						<FormField
 							control={form.control}
 							name='lastName'
@@ -69,7 +78,7 @@ export function RegisterPage() {
 								<FormItem>
 									<FormLabel>Last Name</FormLabel>
 									<FormControl>
-										<Input placeholder='Enter your last name' {...field} />
+										<Input placeholder='Doe' {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -86,7 +95,7 @@ export function RegisterPage() {
 								<FormControl>
 									<Input
 										type='email'
-										placeholder='Enter your email'
+										placeholder='john.doe@example.com'
 										{...field}
 									/>
 								</FormControl>
@@ -102,12 +111,12 @@ export function RegisterPage() {
 							<FormItem>
 								<FormLabel>Password</FormLabel>
 								<FormControl>
-									<Input
-										type='password'
-										placeholder='Create a password'
-										{...field}
-									/>
+									<Input type='password' placeholder='••••••••' {...field} />
 								</FormControl>
+								<FormDescription>
+									Password must be at least 6 characters and contain uppercase,
+									lowercase, and numbers
+								</FormDescription>
 								<FormMessage />
 							</FormItem>
 						)}
@@ -120,24 +129,19 @@ export function RegisterPage() {
 							<FormItem>
 								<FormLabel>Confirm Password</FormLabel>
 								<FormControl>
-									<Input
-										type='password'
-										placeholder='Confirm your password'
-										{...field}
-									/>
+									<Input type='password' placeholder='••••••••' {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
 						)}
 					/>
 
-					<Button
-						type='submit'
-						className='w-full'
-						disabled={form.formState.isSubmitting}>
-						{form.formState.isSubmitting
-							? 'Creating account...'
-							: 'Create account'}
+					{error && (
+						<div className='text-sm text-red-500 text-center'>{error}</div>
+					)}
+
+					<Button type='submit' className='w-full' disabled={isLoading}>
+						{isLoading ? 'Creating account...' : 'Create account'}
 					</Button>
 				</form>
 			</Form>

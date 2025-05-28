@@ -3,20 +3,30 @@ export interface LoginFormData {
 	password: string;
 }
 
-export interface RegisterFormData extends LoginFormData {
+export interface RegisterFormData {
 	firstName: string;
 	lastName: string;
+	email: string;
+	password: string;
 	confirmPassword: string;
 }
 
+export interface RegisterRequestData {
+	email: string;
+	password: string;
+	name: string;
+}
+
 export interface AuthResponse {
-	token: string;
+	accessToken: string;
+	refreshToken: string;
 	user: {
 		id: string;
 		email: string;
-		firstName: string;
-		lastName: string;
-		role: 'ADMIN' | 'TEACHER' | 'STAFF';
+		name: string;
+		role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
+		createdAt: string;
+		updatedAt: string;
 	};
 }
 

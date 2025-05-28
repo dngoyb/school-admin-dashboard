@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { LoginDto, RegisterDto, RefreshTokenDto } from './dto';
+import { LoginDto, RefreshTokenDto } from './dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import { Throttle } from '../common/decorators/throttle.decorator';
 
 @ApiTags('auth')
@@ -25,7 +26,7 @@ export class AuthControllerV2 {
 	@ApiOperation({
 		summary: 'Login user (v2)',
 		description:
-			'Authenticates a user and returns JWT tokens. Rate limited: 5 requests per minute.',
+			'Authenticates a user and returns JWT tokens with enhanced validation. Rate limited: 5 requests per minute.',
 	})
 	@ApiResponse({
 		status: 200,
@@ -52,13 +53,11 @@ export class AuthControllerV2 {
 						name: { type: 'string', example: 'John Doe' },
 						role: {
 							type: 'string',
-							enum: ['ADMIN', 'TEACHER', 'PARENT'],
+							enum: ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
 							example: 'TEACHER',
 						},
-						schoolId: {
-							type: 'string',
-							example: '123e4567-e89b-12d3-a456-426614174001',
-						},
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' },
 					},
 				},
 			},
@@ -74,16 +73,24 @@ export class AuthControllerV2 {
 	@Throttle(3, 3600) // 3 requests per hour
 	@HttpCode(HttpStatus.CREATED)
 	@ApiOperation({
-		summary: 'Register new school and admin user (v2)',
+		summary: 'Register new admin user (v2)',
 		description:
-			'Creates a new school and its first admin user with enhanced validation. Rate limited: 3 requests per hour.',
+			'Creates a new admin user account with enhanced validation. Rate limited: 3 requests per hour.',
 	})
 	@ApiResponse({
 		status: 201,
-		description: 'School and admin user created successfully',
+		description: 'User created successfully',
 		schema: {
 			type: 'object',
 			properties: {
+				accessToken: {
+					type: 'string',
+					example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+				},
+				refreshToken: {
+					type: 'string',
+					example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+				},
 				user: {
 					type: 'object',
 					properties: {
@@ -91,32 +98,13 @@ export class AuthControllerV2 {
 							type: 'string',
 							example: '123e4567-e89b-12d3-a456-426614174000',
 						},
-						email: { type: 'string', example: 'admin@school.com' },
+						email: { type: 'string', example: 'admin@example.com' },
 						name: { type: 'string', example: 'John Doe' },
 						role: {
 							type: 'string',
-							enum: ['ADMIN', 'TEACHER', 'PARENT'],
+							enum: ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
 							example: 'ADMIN',
 						},
-						schoolId: {
-							type: 'string',
-							example: '123e4567-e89b-12d3-a456-426614174001',
-						},
-						createdAt: { type: 'string', format: 'date-time' },
-						updatedAt: { type: 'string', format: 'date-time' },
-					},
-				},
-				school: {
-					type: 'object',
-					properties: {
-						id: {
-							type: 'string',
-							example: '123e4567-e89b-12d3-a456-426614174001',
-						},
-						name: { type: 'string', example: 'My School' },
-						address: { type: 'string', example: '123 School St, City' },
-						contactEmail: { type: 'string', example: 'contact@school.com' },
-						contactPhone: { type: 'string', example: '+1234567890' },
 						createdAt: { type: 'string', format: 'date-time' },
 						updatedAt: { type: 'string', format: 'date-time' },
 					},
@@ -125,7 +113,8 @@ export class AuthControllerV2 {
 		},
 	})
 	@ApiResponse({ status: 400, description: 'Invalid input' })
-	register(@Body() registerDto: RegisterDto) {
+	@ApiResponse({ status: 409, description: 'Email already registered' })
+	register(@Body() registerDto: RegisterUserDto) {
 		return this.authService.register(registerDto);
 	}
 

@@ -42,13 +42,13 @@ model User {
     password  String   @db.VarChar(255)
     name      String   @db.VarChar(255)
     role      Role     @default(STUDENT)
-    schoolId  String
+    schoolId  String?
     createdAt DateTime @default(now()) @db.Timestamptz(6)
     updatedAt DateTime @updatedAt @db.Timestamptz(6)
     isActive  Boolean  @default(true)
 
     // Relations
-    school            School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+    school            School?            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
     student           Student?
     teacher           Teacher?
     parent            Parent?
