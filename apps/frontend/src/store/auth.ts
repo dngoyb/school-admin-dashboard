@@ -1,18 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authApi } from '@/services/api';
 import type {
 	AuthState,
 	LoginFormData,
 	RegisterRequestData,
 } from '@/types/auth';
-import { authApi } from '@/services/api';
+import { toast } from 'sonner';
+import type { AxiosError } from 'axios';
 
 interface AuthStore extends AuthState {
 	// Actions
 	login: (data: LoginFormData) => Promise<void>;
 	register: (data: RegisterRequestData) => Promise<void>;
 	logout: () => Promise<void>;
-	refreshToken: () => Promise<void>;
+	refreshAccessToken: () => Promise<void>;
 	setError: (error: string | null) => void;
 	clearError: () => void;
 }
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
 			// Initial state
 			user: null,
 			token: null,
+			refreshToken: null,
 			isAuthenticated: false,
 			isLoading: false,
 			error: null,
@@ -34,10 +37,12 @@ export const useAuthStore = create<AuthStore>()(
 					const response = await authApi.login(data);
 					set({
 						user: response.user,
-						token: response.token,
+						token: response.accessToken,
+						refreshToken: response.refreshToken,
 						isAuthenticated: true,
 						isLoading: false,
 					});
+					toast.success('Successfully logged in');
 				} catch (error) {
 					const errorMessage =
 						error instanceof Error
@@ -47,6 +52,7 @@ export const useAuthStore = create<AuthStore>()(
 						error: errorMessage,
 						isLoading: false,
 					});
+					toast.error(errorMessage);
 					throw error;
 				}
 			},
@@ -57,10 +63,12 @@ export const useAuthStore = create<AuthStore>()(
 					const response = await authApi.register(data);
 					set({
 						user: response.user,
-						token: response.token,
+						token: response.accessToken,
+						refreshToken: response.refreshToken,
 						isAuthenticated: true,
 						isLoading: false,
 					});
+					toast.success('Account created successfully');
 				} catch (error) {
 					const errorMessage =
 						error instanceof Error
@@ -70,6 +78,7 @@ export const useAuthStore = create<AuthStore>()(
 						error: errorMessage,
 						isLoading: false,
 					});
+					toast.error(errorMessage);
 					throw error;
 				}
 			},
@@ -78,42 +87,64 @@ export const useAuthStore = create<AuthStore>()(
 				try {
 					const { token } = get();
 					if (token) {
-						await authApi.logout();
+						try {
+							await authApi.logout();
+						} catch (error) {
+							// Ignore 404 errors since we're logging out anyway
+							if ((error as AxiosError).response?.status !== 404) {
+								console.error('Logout error:', error);
+								toast.error('Failed to logout properly');
+							}
+						}
 					}
+					toast.success('Successfully logged out');
 				} catch (error) {
 					console.error('Logout error:', error);
+					toast.error('Failed to logout properly');
 				} finally {
 					set({
 						user: null,
 						token: null,
+						refreshToken: null,
 						isAuthenticated: false,
 						error: null,
 					});
 				}
 			},
 
-			refreshToken: async () => {
+			refreshAccessToken: async () => {
 				try {
-					const { token } = get();
-					if (!token) return;
+					const { refreshToken } = get();
+					if (!refreshToken) {
+						throw new Error('No refresh token available');
+					}
 
-					const { token: newToken } = await authApi.refreshToken();
-					set({ token: newToken });
+					const response = await authApi.refreshToken(refreshToken);
+					set({
+						token: response.accessToken,
+						refreshToken: response.refreshToken,
+						user: response.user,
+					});
 				} catch (error) {
 					console.error('Token refresh error:', error);
+					toast.error('Session expired. Please login again.');
 					// If refresh fails, logout the user
 					get().logout();
 				}
 			},
 
-			setError: (error) => set({ error }),
+			setError: (error) => {
+				set({ error });
+				toast.error(error);
+			},
 			clearError: () => set({ error: null }),
 		}),
 		{
 			name: 'auth-storage',
 			partialize: (state) => ({
-				token: state.token,
 				user: state.user,
+				token: state.token,
+				refreshToken: state.refreshToken,
 				isAuthenticated: state.isAuthenticated,
 			}),
 		}

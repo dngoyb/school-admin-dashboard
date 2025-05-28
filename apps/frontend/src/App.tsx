@@ -9,94 +9,126 @@ import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/store/auth';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { Toaster } from 'sonner';
+import { useTheme } from 'next-themes';
 
-function App() {
+function AppContent() {
 	const { isAuthenticated } = useAuthStore();
+	const { theme } = useTheme();
 
 	return (
-		<Router>
-			<Routes>
-				{/* Public routes */}
-				<Route
-					path='/auth/login'
-					element={
-						isAuthenticated ? (
-							<Navigate to='/dashboard' replace />
-						) : (
-							<LoginPage />
-						)
-					}
-				/>
-				<Route
-					path='/auth/register'
-					element={
-						isAuthenticated ? (
-							<Navigate to='/dashboard' replace />
-						) : (
-							<RegisterPage />
-						)
-					}
-				/>
+		<>
+			<Router>
+				<Routes>
+					{/* Public routes */}
+					<Route
+						path='/auth/login'
+						element={
+							isAuthenticated ? (
+								<Navigate to='/dashboard' replace />
+							) : (
+								<LoginPage />
+							)
+						}
+					/>
+					<Route
+						path='/auth/register'
+						element={
+							isAuthenticated ? (
+								<Navigate to='/dashboard' replace />
+							) : (
+								<RegisterPage />
+							)
+						}
+					/>
 
-				{/* Protected routes */}
-				<Route
-					path='/dashboard'
-					element={
-						<ProtectedRoute>
-							<DashboardPage />
-						</ProtectedRoute>
-					}
-				/>
+					{/* Protected routes */}
+					<Route
+						path='/dashboard'
+						element={
+							<ProtectedRoute>
+								<DashboardPage />
+							</ProtectedRoute>
+						}
+					/>
 
-				{/* Admin only routes */}
-				<Route
-					path='/admin/*'
-					element={
-						<ProtectedRoute requiredRole='ADMIN'>
-							{/* Add admin routes here */}
-							<div>Admin Dashboard</div>
-						</ProtectedRoute>
-					}
-				/>
+					{/* Admin only routes */}
+					<Route
+						path='/admin/*'
+						element={
+							<ProtectedRoute requiredRole='ADMIN'>
+								{/* Add admin routes here */}
+								<div>Admin Dashboard</div>
+							</ProtectedRoute>
+						}
+					/>
 
-				{/* Teacher only routes */}
-				<Route
-					path='/teacher/*'
-					element={
-						<ProtectedRoute requiredRole='TEACHER'>
-							{/* Add teacher routes here */}
-							<div>Teacher Dashboard</div>
-						</ProtectedRoute>
-					}
-				/>
+					{/* Teacher only routes */}
+					<Route
+						path='/teacher/*'
+						element={
+							<ProtectedRoute requiredRole='TEACHER'>
+								{/* Add teacher routes here */}
+								<div>Teacher Dashboard</div>
+							</ProtectedRoute>
+						}
+					/>
 
-				{/* Staff only routes */}
-				<Route
-					path='/staff/*'
-					element={
-						<ProtectedRoute requiredRole='STAFF'>
-							{/* Add staff routes here */}
-							<div>Staff Dashboard</div>
-						</ProtectedRoute>
-					}
-				/>
+					{/* Parent only routes */}
+					<Route
+						path='/parent/*'
+						element={
+							<ProtectedRoute requiredRole='PARENT'>
+								{/* Add parent routes here */}
+								<div>Parent Dashboard</div>
+							</ProtectedRoute>
+						}
+					/>
 
-				{/* Redirect root to dashboard if authenticated, otherwise to login */}
-				<Route
-					path='/'
-					element={
-						isAuthenticated ? (
-							<Navigate to='/dashboard' replace />
-						) : (
-							<Navigate to='/auth/login' replace />
-						)
-					}
-				/>
+					{/* Student only routes */}
+					<Route
+						path='/student/*'
+						element={
+							<ProtectedRoute requiredRole='STUDENT'>
+								{/* Add student routes here */}
+								<div>Student Dashboard</div>
+							</ProtectedRoute>
+						}
+					/>
 
-				{/* Catch all route */}
-				<Route path='*' element={<Navigate to='/' replace />} />
-			</Routes>
-		</Router>
+					{/* Redirect root to dashboard if authenticated, otherwise to login */}
+					<Route
+						path='/'
+						element={
+							isAuthenticated ? (
+								<Navigate to='/dashboard' replace />
+							) : (
+								<Navigate to='/auth/login' replace />
+							)
+						}
+					/>
+
+					{/* Catch all route */}
+					<Route path='*' element={<Navigate to='/' replace />} />
+				</Routes>
+			</Router>
+			<Toaster
+				position='top-right'
+				expand={false}
+				richColors
+				closeButton
+				theme={theme as 'light' | 'dark' | 'system'}
+			/>
+		</>
+	);
+}
+
+function App() {
+	return (
+		<ThemeProvider>
+			<AppContent />
+		</ThemeProvider>
 	);
 }
 

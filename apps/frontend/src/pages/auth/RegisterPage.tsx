@@ -15,10 +15,15 @@ import {
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth';
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function RegisterPage() {
 	const navigate = useNavigate();
 	const { register, isLoading, error, clearError } = useAuthStore();
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const form = useForm<RegisterFormData>({
 		resolver: zodResolver(registerSchema),
@@ -96,6 +101,7 @@ export function RegisterPage() {
 									<Input
 										type='email'
 										placeholder='john.doe@example.com'
+										className='pr-10'
 										{...field}
 									/>
 								</FormControl>
@@ -111,7 +117,39 @@ export function RegisterPage() {
 							<FormItem>
 								<FormLabel>Password</FormLabel>
 								<FormControl>
-									<Input type='password' placeholder='••••••••' {...field} />
+									<div className='relative group'>
+										<Input
+											type={showPassword ? 'text' : 'password'}
+											placeholder='••••••••'
+											className={cn(
+												'pr-10 transition-colors',
+												'focus-visible:ring-offset-0',
+												showPassword && 'pr-10'
+											)}
+											{...field}
+										/>
+										<Button
+											type='button'
+											variant='ghost'
+											size='sm'
+											className={cn(
+												'absolute right-0 top-0 h-full px-3 py-2',
+												'opacity-70 hover:opacity-100 transition-opacity',
+												'focus-visible:ring-offset-0 focus-visible:ring-1',
+												'focus-visible:ring-gray-400 focus-visible:bg-gray-50',
+												'active:bg-gray-100'
+											)}
+											onClick={() => setShowPassword(!showPassword)}>
+											{showPassword ? (
+												<EyeOff className='h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-700' />
+											) : (
+												<Eye className='h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-700' />
+											)}
+											<span className='sr-only'>
+												{showPassword ? 'Hide password' : 'Show password'}
+											</span>
+										</Button>
+									</div>
 								</FormControl>
 								<FormDescription>
 									Password must be at least 6 characters and contain uppercase,
@@ -129,7 +167,43 @@ export function RegisterPage() {
 							<FormItem>
 								<FormLabel>Confirm Password</FormLabel>
 								<FormControl>
-									<Input type='password' placeholder='••••••••' {...field} />
+									<div className='relative group'>
+										<Input
+											type={showConfirmPassword ? 'text' : 'password'}
+											placeholder='••••••••'
+											className={cn(
+												'pr-10 transition-colors',
+												'focus-visible:ring-offset-0',
+												showConfirmPassword && 'pr-10'
+											)}
+											{...field}
+										/>
+										<Button
+											type='button'
+											variant='ghost'
+											size='sm'
+											className={cn(
+												'absolute right-0 top-0 h-full px-3 py-2',
+												'opacity-70 hover:opacity-100 transition-opacity',
+												'focus-visible:ring-offset-0 focus-visible:ring-1',
+												'focus-visible:ring-gray-400 focus-visible:bg-gray-50',
+												'active:bg-gray-100'
+											)}
+											onClick={() =>
+												setShowConfirmPassword(!showConfirmPassword)
+											}>
+											{showConfirmPassword ? (
+												<EyeOff className='h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-700' />
+											) : (
+												<Eye className='h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-700' />
+											)}
+											<span className='sr-only'>
+												{showConfirmPassword
+													? 'Hide password'
+													: 'Show password'}
+											</span>
+										</Button>
+									</div>
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -140,7 +214,10 @@ export function RegisterPage() {
 						<div className='text-sm text-red-500 text-center'>{error}</div>
 					)}
 
-					<Button type='submit' className='w-full' disabled={isLoading}>
+					<Button
+						type='submit'
+						className='w-full transition-colors'
+						disabled={isLoading}>
 						{isLoading ? 'Creating account...' : 'Create account'}
 					</Button>
 				</form>

@@ -1,13 +1,19 @@
+export interface User {
+	id: string;
+	email: string;
+	name: string;
+	role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface LoginFormData {
 	email: string;
 	password: string;
 }
 
-export interface RegisterFormData {
-	firstName: string;
-	lastName: string;
-	email: string;
-	password: string;
+export interface RegisterFormData extends LoginFormData {
+	name: string;
 	confirmPassword: string;
 }
 
@@ -20,19 +26,13 @@ export interface RegisterRequestData {
 export interface AuthResponse {
 	accessToken: string;
 	refreshToken: string;
-	user: {
-		id: string;
-		email: string;
-		name: string;
-		role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
-		createdAt: string;
-		updatedAt: string;
-	};
+	user: User;
 }
 
 export interface AuthState {
-	user: AuthResponse['user'] | null;
+	user: User | null;
 	token: string | null;
+	refreshToken: string | null;
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	error: string | null;

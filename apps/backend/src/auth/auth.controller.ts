@@ -131,4 +131,27 @@ export class AuthController {
 	async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
 		return this.authService.refreshToken(refreshTokenDto.refreshToken);
 	}
+
+	@Post('logout')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({
+		summary: 'Logout user',
+		description: 'Logs out the current user and invalidates their session.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'User logged out successfully',
+		schema: {
+			type: 'object',
+			properties: {
+				message: {
+					type: 'string',
+					example: 'Logged out successfully',
+				},
+			},
+		},
+	})
+	async logout() {
+		return this.authService.logout();
+	}
 }

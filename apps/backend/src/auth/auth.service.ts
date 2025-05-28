@@ -170,22 +170,49 @@ export class AuthService {
 		}
 	}
 
-	async refreshToken(userId: string) {
-		const user = await this.prisma.user.findUnique({
-			where: { id: userId },
-		});
+	async refreshToken(refreshToken: string) {
+		try {
+			// Verify the refresh token
+			const payload = await this.jwtService.verifyAsync(refreshToken, {
+				secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+			});
 
-		if (!user || !user.isActive) {
-			throw new UnauthorizedException('Invalid user');
+			const user = await this.prisma.user.findUnique({
+				where: { id: payload.sub },
+			});
+
+			if (!user || !user.isActive) {
+				throw new UnauthorizedException('Invalid refresh token');
+			}
+
+			// Generate new tokens
+			const newPayload = { sub: user.id, email: user.email, role: user.role };
+			const [accessToken, newRefreshToken] = await Promise.all([
+				this.jwtService.signAsync(newPayload, {
+					secret: this.configService.get<string>('JWT_SECRET'),
+					expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1d'),
+				}),
+				this.jwtService.signAsync(newPayload, {
+					secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+					expiresIn: this.configService.get<string>(
+						'JWT_REFRESH_EXPIRES_IN',
+						'7d'
+					),
+				}),
+			]);
+
+			const { password: _, ...userWithoutPassword } = user;
+			return {
+				accessToken,
+				refreshToken: newRefreshToken,
+				user: userWithoutPassword,
+			};
+		} catch (error) {
+			if (error instanceof UnauthorizedException) {
+				throw error;
+			}
+			throw new UnauthorizedException('Invalid refresh token');
 		}
-
-		const payload = { sub: user.id, email: user.email, role: user.role };
-		const token = await this.jwtService.signAsync(payload, {
-			secret: this.configService.get<string>('JWT_SECRET'),
-			expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1d'),
-		});
-
-		return { token };
 	}
 
 	async logout() {

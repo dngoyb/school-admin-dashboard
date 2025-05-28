@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface AuthLayoutProps {
 	children: ReactNode;
@@ -19,22 +20,25 @@ export function AuthLayout({
 	footerLinkText,
 }: AuthLayoutProps) {
 	return (
-		<div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+		<div className='min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8'>
 			<div className='max-w-md w-full space-y-8'>
+				<div className='flex justify-end'>
+					<ThemeToggle />
+				</div>
 				<div className='text-center'>
-					<h2 className='mt-6 text-3xl font-bold text-gray-900'>{title}</h2>
-					<p className='mt-2 text-sm text-gray-600'>{subtitle}</p>
+					<h2 className='mt-6 text-3xl font-bold text-foreground'>{title}</h2>
+					<p className='mt-2 text-sm text-muted-foreground'>{subtitle}</p>
 				</div>
 
-				<div className='mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10'>
+				<div className='mt-8 bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border'>
 					{children}
 				</div>
 
 				<div className='text-center text-sm'>
-					<span className='text-gray-600'>{footerText}</span>{' '}
+					<span className='text-muted-foreground'>{footerText}</span>{' '}
 					<Link
 						to={footerLink}
-						className='font-medium text-indigo-600 hover:text-indigo-500'>
+						className='font-medium text-primary hover:text-primary/90 transition-colors'>
 						{footerLinkText}
 					</Link>
 				</div>
