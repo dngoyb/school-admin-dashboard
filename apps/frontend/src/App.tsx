@@ -127,7 +127,9 @@ function AppContent() {
 function App() {
 	return (
 		<ThemeProvider>
-			<AppContent />
+			<div className='flex-1'>
+				<AppContent />
+			</div>
 		</ThemeProvider>
 	);
 }

@@ -43,6 +43,7 @@ prisma/migrations/
 data/
 backups/
 docker/.env
+docs/images/
 
 # Database
 *.sql
